@@ -17,11 +17,18 @@ class GitHubRateLimitError(GitHubClientError):
         self.retry_at = retry_at
 
 
+class GitHubRepositoryOwner(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    login: str
+
+
 class GitHubRepository(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     id: int = Field(gt=0)
     node_id: str
+    owner: GitHubRepositoryOwner
     name: str
     full_name: str
     private: bool

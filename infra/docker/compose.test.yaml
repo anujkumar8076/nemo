@@ -1,0 +1,18 @@
+name: autonomous-dev-team-integration
+
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: autodev
+      POSTGRES_USER: autodev
+      POSTGRES_PASSWORD: autodev-test
+    ports:
+      - "127.0.0.1:${AUTODEV_TEST_POSTGRES_PORT:-55432}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autodev -d autodev"]
+      interval: 2s
+      timeout: 3s
+      retries: 20

@@ -76,6 +76,7 @@ async def test_repository_listing_paginates_with_one_ephemeral_token() -> None:
         return {
             "id": identifier,
             "node_id": f"R_{identifier}",
+            "owner": {"login": "owner"},
             "name": f"repo-{identifier}",
             "full_name": f"owner/repo-{identifier}",
             "private": True,

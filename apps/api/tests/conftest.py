@@ -1,4 +1,9 @@
+import asyncio
 import os
+import sys
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 os.environ.setdefault(
     "AUTODEV_DATABASE_URL", "postgresql+psycopg://autodev:autodev@localhost:5432/autodev"

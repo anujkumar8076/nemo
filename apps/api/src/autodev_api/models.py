@@ -45,6 +45,12 @@ class RepositoryStatus(StrEnum):
     DISABLED = "disabled"
 
 
+class GitHubInstallationStatus(StrEnum):
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    REVOKED = "revoked"
+
+
 class TaskMode(StrEnum):
     BUILD = "build"
     GUARDIAN = "guardian"
@@ -127,6 +133,98 @@ class Membership(Base):
     __table_args__ = (
         UniqueConstraint("organization_id", "user_id", name="uq_memberships_org_user"),
         Index("ix_memberships_user_org", "user_id", "organization_id"),
+    )
+
+
+class GitHubInstallation(Base):
+    __tablename__ = "github_installations"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    external_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
+    account_external_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    account_login: Mapped[str] = mapped_column(String(255), nullable=False)
+    account_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    repository_selection: Mapped[str] = mapped_column(String(16), nullable=False)
+    permissions: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    status: Mapped[GitHubInstallationStatus] = mapped_column(
+        enum_type(GitHubInstallationStatus, "github_installation_status", 16),
+        default=GitHubInstallationStatus.ACTIVE,
+        nullable=False,
+    )
+    suspended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "id", name="uq_github_installations_org_id"),
+        CheckConstraint(
+            "account_type IN ('Organization', 'User')",
+            name="ck_github_installations_account_type",
+        ),
+        CheckConstraint(
+            "repository_selection IN ('all', 'selected')",
+            name="ck_github_installations_repository_selection",
+        ),
+        Index("ix_github_installations_org_status", "organization_id", "status"),
+    )
+
+
+class GitHubInstallationRepository(Base):
+    __tablename__ = "github_installation_repositories"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    installation_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    external_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    node_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    owner: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str] = mapped_column(String(512), nullable=False)
+    private: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    default_branch: Mapped[str] = mapped_column(String(255), nullable=False)
+    html_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    archived: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    disabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    available: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["organization_id", "installation_id"],
+            ["github_installations.organization_id", "github_installations.id"],
+            ondelete="CASCADE",
+            name="fk_github_installation_repositories_org_installation",
+        ),
+        UniqueConstraint(
+            "installation_id",
+            "external_id",
+            name="uq_github_installation_repositories_installation_external",
+        ),
+        Index(
+            "ix_github_installation_repositories_org_available",
+            "organization_id",
+            "available",
+        ),
+        Index(
+            "ix_github_installation_repositories_installation",
+            "installation_id",
+            "external_id",
+        ),
     )
 
 

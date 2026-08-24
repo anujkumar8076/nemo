@@ -42,6 +42,9 @@ packages. The `.venv` directory is ignored.
 
 Run `pnpm check` for local quality gates and `pnpm security` for dependency
 auditing. CI additionally validates Python, migrations, containers, and secrets.
+Database integration checks can use `infra/docker/compose.test.yaml`, which
+publishes an ephemeral PostgreSQL instance on loopback port 55432 without
+changing the development stack.
 
 ## Development authentication
 

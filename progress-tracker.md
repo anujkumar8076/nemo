@@ -341,6 +341,9 @@ Validated:
 - Python dependency audit found no known vulnerabilities;
 - production non-root API image built successfully with the pinned RSA
   cryptography stack.
+- hosted CI run `32732316776`: all 11 jobs passed, including PostgreSQL
+  integration, migration rollback/upgrade, dependency audits, secret scanning,
+  and all production container builds.
 
 Decisions:
 - installation tokens remain in process memory only and are never database
@@ -349,13 +352,60 @@ Decisions:
   repository inventory are persisted and verified.
 
 Known issues:
-- hosted CI still requires validation;
 - a real GitHub App identity and public HTTPS webhook endpoint are still needed
   for contract testing against GitHub.
 
 Next:
 - add tenant-owned installation and repository inventory persistence and sync;
-- validate the credential boundary through dependency audit and hosted CI.
+- validate installation and repository synchronization against PostgreSQL.
+
+### 2026-08-24 — Phase 2 tenant-owned repository inventory
+
+Status:
+PARTIAL
+
+Implemented:
+- tenant-owned GitHub installation records with provider identity, permissions,
+  repository selection, lifecycle status, and synchronization timestamps;
+- a separate installation repository inventory with composite tenant foreign
+  keys, provider metadata, availability, and removal history;
+- atomic, row-locked repository reconciliation with idempotent upserts,
+  removal marking, metadata refresh, and duplicate-input rejection;
+- an isolated loopback-only ephemeral PostgreSQL Compose stack for repeatable
+  local integration validation.
+
+Validated:
+- Ruff formatting/lint and strict mypy checks passed for source, migrations,
+  and tests;
+- migration `0004_github_install_inventory` upgraded from base, downgraded to
+  base, and upgraded again against PostgreSQL 17.6;
+- all three real PostgreSQL integration tests passed, including repository
+  addition, metadata update, removal, cross-tenant installation denial, and
+  refusal to synchronize a revoked installation;
+- the local unit suite passes with database tests gated when PostgreSQL is not
+  explicitly enabled.
+
+Decisions:
+- installation inventory is not a project assignment; repositories can be
+  visible to the App before a human connects one to a project;
+- synchronization requires an already active, tenant-owned installation and
+  cannot claim an installation from an untrusted callback or webhook payload;
+- removed repositories retain non-secret metadata and removal time for audit
+  continuity while becoming unavailable for future work.
+
+Known issues:
+- no authenticated installation-claim state flow or tenant repository-list API
+  exists yet;
+- real GitHub contract validation still needs a GitHub App and public HTTPS
+  callback/webhook endpoint;
+- hosted CI has not yet validated this inventory slice.
+
+Next:
+- implement a signed, one-time installation state flow bound to the initiating
+  tenant/user before any installation can be claimed;
+- expose read-only tenant-scoped installation repository inventory and connect
+  a selected repository to a project;
+- validate removal and revoked-installation behavior with real GitHub fixtures.
 
 ## Update Template
 
