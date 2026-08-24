@@ -437,6 +437,9 @@ Validated:
   errors or page overflow and confirmed no unsafe installation action appears;
 - runtime validation caught and fixed a build-time static-rendering defect; the
   production build now identifies `/settings` as dynamic server rendering.
+- hosted CI run `32735932472`: all 11 jobs passed, including tenant inventory
+  API integration, JavaScript contracts/UI, dependency and secret scans,
+  migration validation, and all production container builds.
 
 Decisions:
 - inventory reads are available before installation claiming because they do
@@ -447,14 +450,12 @@ Decisions:
   partial verified state without presenting false success.
 
 Known issues:
-- hosted CI has not yet validated this read/UI slice;
 - no safe installation claim can be exposed until GitHub user identity is
   verified in addition to one-time tenant state;
 - a real GitHub App and public HTTPS callback/webhook endpoint are still needed
   for provider contract validation.
 
 Next:
-- validate this slice in hosted CI;
 - implement the GitHub user-identity verification boundary and one-time claim
   state without persisting provider access tokens;
 - connect a human-selected available repository to a project before enabling
