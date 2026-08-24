@@ -55,6 +55,19 @@ deployment therefore cannot accidentally ship with this temporary auth mode.
 All values in `.env.example` are intentionally fake local defaults. Replace the
 bootstrap token in any shared development environment.
 
+## GitHub webhook ingress
+
+Phase 2 begins with a disabled-by-default webhook trust boundary at
+`POST /webhooks/github`. When enabled, it verifies `X-Hub-Signature-256` over
+the untouched request body, accepts only the documented initial event set,
+persists the delivery ID and payload digest, and deduplicates redeliveries at
+the database constraint. Set a unique `AUTODEV_GITHUB_WEBHOOK_SECRET` of at
+least 32 characters in the receiving environment; the example value is fake.
+
+Installation claiming, short-lived installation tokens, repository sync, and
+remote repository writes are not enabled by this ingress slice. They require a
+real GitHub App and verification against a dedicated test repository.
+
 ## Safety defaults
 
 The platform may analyze repositories, modify isolated workspaces, run checks,

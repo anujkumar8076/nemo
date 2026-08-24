@@ -266,6 +266,50 @@ Next:
 - begin Phase 2 GitHub App integration without starting repository code
   execution or multi-agent behavior.
 
+### 2026-08-24 — Phase 2 webhook trust boundary
+
+Status:
+PARTIAL
+
+Implemented:
+- disabled-by-default GitHub webhook configuration with validated secret and
+  bounded payload size;
+- raw-body HMAC-SHA256 signature verification before JSON parsing;
+- supported-event allowlist including installation, repository, issue, pull
+  request, check, workflow, push, and setup ping events;
+- durable webhook delivery records with payload digests, installation and
+  repository identifiers, processing status, and database-unique delivery IDs;
+- replay-safe duplicate handling and a reversible webhook-ingress migration.
+
+Validated:
+- unit coverage for raw-body signature integrity and invalid signatures;
+- integration coverage prepared for accepted, duplicate, and invalid signed
+  deliveries against PostgreSQL;
+- Ruff, strict MyPy, and the local non-integration Python suite pass.
+- migration `0003_github_webhook_ingress` upgraded, downgraded, and upgraded
+  successfully on live PostgreSQL;
+- a locally signed `issues` delivery returned `accepted`, and an exact replay
+  returned `duplicate`; integration was then restored to disabled-by-default.
+
+Decisions:
+- installation setup callbacks will not trust `installation_id` alone; tenant
+  claiming must combine one-time state with verified GitHub identity or signed
+  installation state;
+- delivery ingestion persists `pending` work quickly; durable workflow dispatch
+  and normalization are the next slice rather than request-thread work;
+- GitHub integration remains disabled until a unique webhook secret and real
+  GitHub App are configured.
+
+Known issues:
+- the PostgreSQL webhook integration test still requires hosted validation;
+- no GitHub App installation, repository synchronization, token service, or
+  remote write action exists yet.
+
+Next:
+- validate migration rollback/upgrade and signed delivery integration in CI;
+- implement installation identity, repository synchronization, and the
+  short-lived token provider boundary before any branch or pull-request action.
+
 ## Update Template
 
 Copy this section when recording a milestone:

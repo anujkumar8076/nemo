@@ -125,3 +125,8 @@ class AuditEventRead(BaseModel):
 class ActivityPage(BaseModel):
     items: list[AuditEventRead]
     next_cursor: str | None = None
+
+
+class GitHubWebhookAccepted(BaseModel):
+    status: Literal["accepted", "duplicate", "ignored"]
+    delivery_id: str

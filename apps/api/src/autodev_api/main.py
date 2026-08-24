@@ -9,7 +9,7 @@ from autodev_api.config import get_settings
 from autodev_api.database import engine
 from autodev_api.errors import install_error_handlers
 from autodev_api.health import dependency_health
-from autodev_api.routes import router
+from autodev_api.routes import router, webhook_router
 from autodev_api.schemas import HealthResponse
 
 
@@ -22,13 +22,14 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title="Autonomous Dev Team API",
-    version="0.2.0",
+    version="0.3.0",
     docs_url="/docs",
     redoc_url=None,
     lifespan=lifespan,
 )
 install_error_handlers(app)
 app.include_router(router)
+app.include_router(webhook_router)
 
 
 @app.middleware("http")

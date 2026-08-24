@@ -1,14 +1,23 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from autodev_api.auth import Principal, get_principal
+from autodev_api.config import Settings, get_settings
 from autodev_api.database import get_session
+from autodev_api.errors import ApiError
+from autodev_api.github_webhooks import (
+    SUPPORTED_EVENTS,
+    parse_payload,
+    persist_delivery,
+    verify_signature,
+)
 from autodev_api.schemas import (
     ActivityPage,
     AuditEventRead,
+    GitHubWebhookAccepted,
     ProjectCreate,
     ProjectPage,
     ProjectRead,
@@ -28,8 +37,51 @@ from autodev_api.services import (
 )
 
 router = APIRouter(prefix="/v1")
+webhook_router = APIRouter()
 SessionDependency = Annotated[AsyncSession, Depends(get_session)]
 PrincipalDependency = Annotated[Principal, Depends(get_principal)]
+SettingsDependency = Annotated[Settings, Depends(get_settings)]
+
+
+@webhook_router.post(
+    "/webhooks/github",
+    response_model=GitHubWebhookAccepted,
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["webhooks"],
+)
+async def github_webhook_endpoint(
+    request: Request,
+    session: SessionDependency,
+    settings: SettingsDependency,
+    delivery_id: Annotated[str, Header(alias="X-GitHub-Delivery", min_length=1, max_length=64)],
+    event_type: Annotated[str, Header(alias="X-GitHub-Event", min_length=1, max_length=64)],
+    signature: Annotated[str | None, Header(alias="X-Hub-Signature-256")] = None,
+) -> GitHubWebhookAccepted:
+    if not settings.github_integration_enabled or settings.github_webhook_secret is None:
+        raise ApiError(503, "github_integration_disabled", "GitHub integration is disabled.")
+    chunks: list[bytes] = []
+    body_size = 0
+    async for chunk in request.stream():
+        body_size += len(chunk)
+        if body_size > settings.github_webhook_max_body_bytes:
+            raise ApiError(413, "webhook_payload_too_large", "The webhook payload is too large.")
+        chunks.append(chunk)
+    body = b"".join(chunks)
+    verify_signature(body, signature, settings.github_webhook_secret.get_secret_value())
+    if event_type not in SUPPORTED_EVENTS:
+        return GitHubWebhookAccepted(status="ignored", delivery_id=delivery_id)
+    payload = parse_payload(body)
+    created = await persist_delivery(
+        session,
+        delivery_id=delivery_id,
+        event_type=event_type,
+        body=body,
+        payload=payload,
+    )
+    return GitHubWebhookAccepted(
+        status="accepted" if created else "duplicate",
+        delivery_id=delivery_id,
+    )
 
 
 @router.post(

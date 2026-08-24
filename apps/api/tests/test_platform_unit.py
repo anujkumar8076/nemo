@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -7,6 +9,7 @@ from pydantic import SecretStr, ValidationError
 
 from autodev_api.config import Settings
 from autodev_api.errors import ApiError
+from autodev_api.github_webhooks import verify_signature
 from autodev_api.main import app
 from autodev_api.schemas import ProjectUpdate
 from autodev_api.services import decode_cursor, encode_cursor
@@ -62,3 +65,14 @@ def test_cursor_round_trip_and_rejects_invalid_values() -> None:
     with pytest.raises(ApiError) as error:
         decode_cursor("not-a-cursor")
     assert error.value.code == "invalid_cursor"
+
+
+def test_github_signature_verification_uses_the_raw_body() -> None:
+    body = '{"zen":"Keep it logically awesome ✓"}'.encode()
+    secret = "webhook-test-secret-with-at-least-32-characters"
+    signature = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+
+    verify_signature(body, signature, secret)
+    with pytest.raises(ApiError) as error:
+        verify_signature(body + b" ", signature, secret)
+    assert error.value.code == "invalid_webhook_signature"

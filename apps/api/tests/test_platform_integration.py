@@ -1,8 +1,12 @@
+import hashlib
+import hmac
+import json
 import os
 from uuid import uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from pydantic import SecretStr
 
 from autodev_api.bootstrap import ensure_bootstrap_identity
 from autodev_api.config import get_settings
@@ -144,3 +148,53 @@ async def test_persisted_project_task_and_activity_lifecycle() -> None:
         cross_tenant_read = await client.get(f"/v1/projects/{other_project_id}")
         assert cross_tenant_read.status_code == 404
         assert cross_tenant_read.json()["error"]["code"] == "project_not_found"
+
+
+@pytest.mark.asyncio
+async def test_signed_github_delivery_is_persisted_and_deduplicated() -> None:
+    secret = "github-webhook-integration-secret-000000000000"
+    settings = get_settings().model_copy(
+        update={
+            "github_integration_enabled": True,
+            "github_webhook_secret": SecretStr(secret),
+        }
+    )
+    app.dependency_overrides[get_settings] = lambda: settings
+    body = json.dumps(
+        {
+            "action": "opened",
+            "installation": {"id": 12345678901},
+            "repository": {"id": 98765432101},
+            "issue": {"number": 7},
+        },
+        separators=(",", ":"),
+    ).encode()
+    signature = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    headers = {
+        "Content-Type": "application/json",
+        "X-GitHub-Delivery": str(uuid4()),
+        "X-GitHub-Event": "issues",
+        "X-Hub-Signature-256": signature,
+    }
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            accepted = await client.post("/webhooks/github", content=body, headers=headers)
+            duplicate = await client.post("/webhooks/github", content=body, headers=headers)
+            invalid = await client.post(
+                "/webhooks/github",
+                content=body,
+                headers={
+                    **headers,
+                    "X-GitHub-Delivery": str(uuid4()),
+                    "X-Hub-Signature-256": "sha256=00",
+                },
+            )
+    finally:
+        app.dependency_overrides.pop(get_settings, None)
+
+    assert accepted.status_code == 202
+    assert accepted.json()["status"] == "accepted"
+    assert duplicate.status_code == 202
+    assert duplicate.json()["status"] == "duplicate"
+    assert invalid.status_code == 401
+    assert invalid.json()["error"]["code"] == "invalid_webhook_signature"

@@ -34,12 +34,22 @@ class Settings(BaseSettings):
         max_length=63,
         pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
     )
+    github_integration_enabled: bool = False
+    github_webhook_secret: SecretStr | None = None
+    github_webhook_max_body_bytes: int = Field(default=2_000_000, ge=1024, le=25_000_000)
 
     @model_validator(mode="after")
     def reject_bootstrap_auth_in_production(self) -> "Settings":
         if self.environment == "production":
             raise ValueError(
                 "bootstrap authentication is development-only; configure production auth first"
+            )
+        if self.github_integration_enabled and (
+            self.github_webhook_secret is None
+            or len(self.github_webhook_secret.get_secret_value()) < 32
+        ):
+            raise ValueError(
+                "enabled GitHub integration requires a webhook secret of at least 32 characters"
             )
         return self
 
