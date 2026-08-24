@@ -9,8 +9,8 @@
 
 ## Current Stage
 
-**Stage:** Phase 1 / Platform skeleton\
-**Overall status:** Phase 0 complete; Phase 1 is locally complete and awaiting hosted CI evidence.
+**Stage:** Phase 2 / GitHub App integration\
+**Overall status:** Phases 0 and 1 complete; Phase 2 is beginning.
 
 ## Product Goal
 
@@ -29,8 +29,8 @@ Production Failure → Detect → Diagnose → Repair → Test → PR → Verify
   Phase   Scope                                  Status
   ------- -------------------------------------- -------------
   0       Architecture & repository foundation   COMPLETE
-  1       Platform skeleton                      IN PROGRESS
-  2       GitHub App integration                 NOT STARTED
+  1       Platform skeleton                      COMPLETE
+  2       GitHub App integration                 IN PROGRESS
   3       Repository intelligence                NOT STARTED
   4       Sandbox runtime                        NOT STARTED
   5       Single-agent build loop                NOT STARTED
@@ -220,7 +220,7 @@ Next:
 ### 2026-08-24 — Phase 1 persisted platform slice
 
 Status:
-PARTIAL — implementation and local validation complete; hosted CI pending.
+COMPLETED
 
 Implemented:
 - tenant-scoped User, Organization, Membership, Project, Repository,
@@ -246,6 +246,9 @@ Validated:
 - production Next.js build passed;
 - browser smoke flow passed from empty state through project creation, task
   creation, cancellation, audit visibility, and mobile overflow validation.
+- hosted CI run `32729601466`: all 11 jobs passed, including the real
+  PostgreSQL tenant-isolation API integration job, migration rollback/upgrade,
+  three container builds, dependency audits, and secret scanning.
 
 Decisions:
 - bootstrap bearer authentication is strictly local/development-only; selecting
@@ -256,13 +259,11 @@ Decisions:
   retain idempotency under retries.
 
 Known issues:
-- hosted CI has not yet validated this Phase 1 commit;
 - the dashboard readiness request occasionally exceeded the original 2.5-second
   client timeout, which was raised to 5 seconds while preserving a bounded wait.
 
 Next:
-- pass the complete local quality/security gate and hosted GitHub Actions;
-- then begin Phase 2 GitHub App integration without starting repository code
+- begin Phase 2 GitHub App integration without starting repository code
   execution or multi-agent behavior.
 
 ## Update Template
