@@ -9,8 +9,8 @@
 
 ## Current Stage
 
-**Stage:** Phase 0 / Hosted CI verification\
-**Overall status:** Foundation implemented and locally verified; the hosted CI exit gate awaits a GitHub remote and first push.
+**Stage:** Phase 1 / Platform skeleton\
+**Overall status:** Phase 0 complete; Phase 1 core persisted project/task slice is in progress.
 
 ## Product Goal
 
@@ -28,8 +28,8 @@ Production Failure → Detect → Diagnose → Repair → Test → PR → Verify
 
   Phase   Scope                                  Status
   ------- -------------------------------------- -------------
-  0       Architecture & repository foundation   IN PROGRESS
-  1       Platform skeleton                      NOT STARTED
+  0       Architecture & repository foundation   COMPLETE
+  1       Platform skeleton                      IN PROGRESS
   2       GitHub App integration                 NOT STARTED
   3       Repository intelligence                NOT STARTED
   4       Sandbox runtime                        NOT STARTED
@@ -82,7 +82,7 @@ Production Failure → Detect → Diagnose → Repair → Test → PR → Verify
 -   [x] Add root `AGENTS.md`.
 -   [x] Add these project context files to repository.
 -   [x] Verify one-command local startup.
--   [ ] Run the workflow successfully on hosted GitHub Actions.
+-   [x] Run the workflow successfully on hosted GitHub Actions.
 
 ## First Six Product Milestones
 
@@ -166,18 +166,15 @@ Success: `CI/deployment/runtime incident → verified repair PR`
 
 ## Blockers
 
-Phase 0 cannot satisfy its hosted-CI exit criterion until this local
-repository has a GitHub destination and the workflow runs there. This
-does not affect local verification. Multi-agent orchestration remains
-prohibited until the single-agent PR loop is proven.
+None. Multi-agent orchestration remains prohibited until the
+single-agent PR loop is proven.
 
 ## Milestone History
 
 ### 2026-08-24 — Phase 0 local foundation
 
 Status:
-PARTIAL — all local exit evidence is green; hosted GitHub Actions has
-not run because no remote is configured.
+COMPLETED
 
 Implemented:
 - monorepo foundation with Next.js web, FastAPI API, and Temporal worker;
@@ -200,23 +197,25 @@ Validated:
 - live Temporal workflow: worker executed `ConnectivityWorkflow` successfully;
 - container builds: API, worker, and web passed; the rebuilt API remained healthy;
 - web smoke check: HTTP 200 and expected application content.
+- hosted CI run `32725249850`: all 10 matrix jobs passed, including
+  JavaScript/Python checks, dependency audits, migration rollback/upgrade,
+  three container builds, and secret scanning.
 
 Decisions:
 - upgraded FastAPI to 0.141.1 and pinned patched Starlette 1.3.1 after the
   dependency audit detected advisories in Starlette 0.47.3;
 - pinned PostCSS 8.5.23 after the JavaScript audit identified
   GHSA-fxqj-rqcc-2cmp in the previous transitive version;
+- upgraded GitHub Actions to supported Node 24-era majors after the first
+  hosted run exposed the retired Gitleaks v2 runtime;
 - kept the sandbox manager intentionally deferred until Phase 4;
 - kept human merge as the default and did not introduce multi-agent behavior.
 
 Known issues:
-- hosted CI has not run because the repository has no GitHub remote;
-- no unresolved local security findings are known at this milestone.
+- no unresolved Phase 0 findings are known at this milestone.
 
 Next:
-- create or select the GitHub repository, push the foundation, and require a
-  green hosted CI run before marking Phase 0 complete;
-- then implement the Phase 1 persisted project/task vertical slice.
+- implement the Phase 1 persisted project/task vertical slice.
 
 ## Update Template
 
