@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -73,6 +74,37 @@ def test_github_remote_actions_require_app_credentials() -> None:
             github_integration_enabled=True,
             github_webhook_secret=SecretStr("b" * 32),
             github_remote_actions_enabled=True,
+        )
+
+
+def test_github_user_authorization_requires_complete_https_configuration() -> None:
+    base: dict[str, Any] = {
+        "database_url": "postgresql+psycopg://example.invalid/autodev",
+        "redis_url": "redis://example.invalid/0",
+        "temporal_address": "example.invalid:7233",
+        "bootstrap_api_token": SecretStr("a" * 32),
+        "bootstrap_user_id": uuid4(),
+        "bootstrap_user_email": "developer@example.invalid",
+        "bootstrap_user_name": "Developer",
+        "bootstrap_organization_id": uuid4(),
+        "bootstrap_organization_name": "Workspace",
+        "bootstrap_organization_slug": "workspace",
+        "github_integration_enabled": True,
+        "github_webhook_secret": SecretStr("b" * 32),
+        "github_app_id": 123,
+        "github_private_key": SecretStr("test-private-key"),
+        "github_user_authorization_enabled": True,
+    }
+    with pytest.raises(ValidationError, match="OAuth credentials"):
+        Settings(**base)
+
+    with pytest.raises(ValidationError, match="must be an HTTPS URL"):
+        Settings(
+            **base,
+            github_client_id="Iv1.test",
+            github_client_secret=SecretStr("client-secret"),
+            github_oauth_callback_url="http://control.test/github/callback",
+            github_installation_url="https://github.test/apps/autodev/installations/new",
         )
 
 

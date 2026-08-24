@@ -487,6 +487,9 @@ Validated:
 - all six PostgreSQL integration tests passed, including masked/digested state,
   tenant/user binding, immutable setup ID, expiry, successful verified claim,
   and replay rejection.
+- hosted CI run `32737175683`: all 11 jobs passed, including migration
+  validation, PostgreSQL integration, dependency and secret scans, and all
+  production container builds.
 
 Decisions:
 - setup callbacks may record a candidate installation but can never create
@@ -499,7 +502,6 @@ Decisions:
 Known issues:
 - no configuration, OAuth code exchange, user-installation verification, or
   public setup/callback endpoint exists yet;
-- hosted CI has not yet validated migration `0005`;
 - a real GitHub App and public HTTPS callback are still required for provider
   contract validation.
 
@@ -510,6 +512,56 @@ Next:
 - expose the install/setup/callback flow only after the adapter and redirect
   allowlist are fully tested;
 - synchronize inventory immediately after a verified claim.
+
+### 2026-08-24 — Phase 2 GitHub user authorization adapter
+
+Status:
+PARTIAL
+
+Implemented:
+- a disabled-by-default, server-only OAuth configuration boundary requiring
+  GitHub App credentials, OAuth credentials, and credential-free HTTPS
+  provider, callback, and installation URLs;
+- one-time OAuth code exchange with secret-wrapped user tokens;
+- authenticated GitHub user lookup and complete paginated enumeration of that
+  user's accessible App installations;
+- exact installation-ID verification that emits only typed, non-secret claim
+  evidence and never returns or persists the user access token;
+- sanitized provider and malformed-response errors that exclude OAuth payloads
+  and credentials.
+
+Validated:
+- full monorepo lint, formatting, strict type checks, unit tests, compilation,
+  and production Next.js build passed;
+- API suite: 19 passed with six PostgreSQL tests explicitly gated;
+- adapter tests cover form exchange, secret use, authenticated user identity,
+  multi-page exact matching, inaccessible installation rejection, and OAuth
+  error sanitization;
+- high-severity JavaScript dependency audit found no known vulnerabilities;
+- the production non-root API image built successfully and the Compose model
+  validated with user authorization disabled by default.
+
+Decisions:
+- user access tokens exist only inside the adapter call and are represented as
+  masked secrets; the claim service receives no credential;
+- provider responses are parsed into strict minimum contracts while unknown
+  fields are ignored for forward compatibility;
+- public installation and callback routes remain unavailable in this slice, so
+  unverified setup identifiers still cannot create tenant ownership.
+
+Known issues:
+- hosted CI has not yet validated the authorization adapter;
+- no public begin/setup/OAuth callback flow or redirect allowlist is exposed;
+- a real GitHub App and public HTTPS callback are required for end-to-end
+  provider contract validation.
+
+Next:
+- implement and test the disabled-by-default begin/setup/OAuth callback flow
+  with fixed trusted redirects and generic failure responses;
+- complete the one-time claim only after adapter proof, then synchronize the
+  installation inventory with an ephemeral App installation token;
+- connect a human-selected available repository to a project before enabling
+  branch or pull-request writes.
 
 ## Update Template
 

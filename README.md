@@ -81,8 +81,12 @@ passed to agent execution.
 Installation claiming now has a durable, tenant/user-bound one-time state
 machine, but no public claim action is enabled. Raw state is never stored, setup
 identifiers cannot change after first observation, expired/replayed state is
-rejected, and completion requires a typed proof from the pending GitHub user
-authorization adapter. GitHub user access tokens will remain ephemeral.
+rejected, and completion requires typed proof from the server-only GitHub user
+authorization adapter. That adapter exchanges the one-time OAuth code, verifies
+the authenticated user and exact accessible installation, and discards the
+access token without returning or persisting it. Both user authorization and
+the public claim flow remain disabled until explicitly configured and tested
+with a real GitHub App.
 
 ## Safety defaults
 

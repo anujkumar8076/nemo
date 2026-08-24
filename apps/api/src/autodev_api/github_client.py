@@ -79,6 +79,17 @@ def retry_time(response: httpx.Response) -> datetime | None:
     return None
 
 
+def raise_for_provider_error(response: httpx.Response) -> None:
+    if response.status_code in {403, 429} and (
+        response.status_code == 429
+        or response.headers.get("X-RateLimit-Remaining") == "0"
+        or "Retry-After" in response.headers
+    ):
+        raise GitHubRateLimitError(retry_time(response))
+    if response.is_error:
+        raise GitHubClientError(f"GitHub API request failed with status {response.status_code}")
+
+
 class GitHubAppClient:
     def __init__(
         self,
@@ -127,7 +138,7 @@ class GitHubAppClient:
             headers={"Authorization": f"Bearer {self._credentials.create_jwt()}"},
             json=request_body,
         )
-        self._raise_for_provider_error(response)
+        raise_for_provider_error(response)
         try:
             token = InstallationTokenResponse.model_validate(response.json())
         except (ValueError, TypeError) as error:
@@ -148,7 +159,7 @@ class GitHubAppClient:
                 headers={"Authorization": f"Bearer {token.token.get_secret_value()}"},
                 params={"per_page": 100, "page": page},
             )
-            self._raise_for_provider_error(response)
+            raise_for_provider_error(response)
             try:
                 value = response.json()
                 raw_repositories = value.get("repositories") if isinstance(value, dict) else None
@@ -165,14 +176,3 @@ class GitHubAppClient:
             if not raw_repositories:
                 raise GitHubClientError("GitHub repository pagination ended before total_count")
             page += 1
-
-    @staticmethod
-    def _raise_for_provider_error(response: httpx.Response) -> None:
-        if response.status_code in {403, 429} and (
-            response.status_code == 429
-            or response.headers.get("X-RateLimit-Remaining") == "0"
-            or "Retry-After" in response.headers
-        ):
-            raise GitHubRateLimitError(retry_time(response))
-        if response.is_error:
-            raise GitHubClientError(f"GitHub API request failed with status {response.status_code}")

@@ -1,5 +1,6 @@
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import urlparse
 from uuid import UUID
 
 from pydantic import Field, SecretStr, model_validator
@@ -43,6 +44,12 @@ class Settings(BaseSettings):
     github_private_key: SecretStr | None = None
     github_api_url: str = "https://api.github.com"
     github_api_version: str = "2026-03-10"
+    github_user_authorization_enabled: bool = False
+    github_client_id: str | None = Field(default=None, min_length=1, max_length=255)
+    github_client_secret: SecretStr | None = None
+    github_oauth_url: str = "https://github.com"
+    github_oauth_callback_url: str | None = None
+    github_installation_url: str | None = None
 
     @model_validator(mode="after")
     def reject_bootstrap_auth_in_production(self) -> "Settings":
@@ -63,6 +70,40 @@ class Settings(BaseSettings):
             or self.github_private_key is None
         ):
             raise ValueError("GitHub remote actions require integration, app ID, and private key")
+        if self.github_user_authorization_enabled:
+            required = (
+                self.github_integration_enabled,
+                self.github_app_id is not None,
+                self.github_private_key is not None,
+                self.github_client_id is not None,
+                self.github_client_secret is not None,
+                self.github_oauth_callback_url is not None,
+                self.github_installation_url is not None,
+            )
+            if not all(required):
+                raise ValueError(
+                    "GitHub user authorization requires integration, App credentials, "
+                    "OAuth credentials, callback URL, and installation URL"
+                )
+            for name, value in (
+                ("API URL", self.github_api_url),
+                ("oauth URL", self.github_oauth_url),
+                ("callback URL", self.github_oauth_callback_url),
+                ("installation URL", self.github_installation_url),
+            ):
+                parsed = urlparse(value or "")
+                if (
+                    parsed.scheme != "https"
+                    or parsed.hostname is None
+                    or parsed.username is not None
+                    or parsed.password is not None
+                    or parsed.query
+                    or parsed.fragment
+                ):
+                    raise ValueError(
+                        f"GitHub {name} must be an HTTPS URL without credentials, "
+                        "query, or fragment"
+                    )
         return self
 
 

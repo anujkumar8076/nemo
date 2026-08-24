@@ -19,4 +19,10 @@ short-lived GitHub user access token proves that the same installation is
 accessible to that GitHub user. Only the state digest and non-secret identity
 evidence are stored; user and installation access tokens remain ephemeral.
 
+The user authorization adapter is server-only and disabled by default. It uses
+the OAuth code once, validates GitHub's typed responses, follows installation
+pagination to an exact ID match, and returns only the non-secret proof required
+by the claim service. Public setup and callback routes remain unavailable until
+the complete redirect and error-handling boundary is tested.
+
 Reference: [GitHub setup URL security guidance](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/about-the-setup-url).
