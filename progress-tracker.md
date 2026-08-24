@@ -10,7 +10,7 @@
 ## Current Stage
 
 **Stage:** Phase 1 / Platform skeleton\
-**Overall status:** Phase 0 complete; Phase 1 core persisted project/task slice is in progress.
+**Overall status:** Phase 0 complete; Phase 1 is locally complete and awaiting hosted CI evidence.
 
 ## Product Goal
 
@@ -216,6 +216,54 @@ Known issues:
 
 Next:
 - implement the Phase 1 persisted project/task vertical slice.
+
+### 2026-08-24 — Phase 1 persisted platform slice
+
+Status:
+PARTIAL — implementation and local validation complete; hosted CI pending.
+
+Implemented:
+- tenant-scoped User, Organization, Membership, Project, Repository,
+  ProjectRule, Task, and AuditEvent persistence models;
+- reversible platform-skeleton migration with tenant-safe composite foreign
+  keys, uniqueness constraints, indexes, and optimistic project versions;
+- development-only bootstrap authentication that fails closed in production;
+- versioned project, task, cancellation, pagination, and activity APIs with
+  consistent error envelopes, correlation IDs, idempotency, and audit events;
+- a responsive application shell, dashboard, projects, project detail, task
+  creation, task detail, cancellation control, and settings placeholder;
+- shared runtime-validated TypeScript contracts and real PostgreSQL API
+  integration coverage in CI.
+
+Validated:
+- Python Ruff and strict MyPy checks passed;
+- Python unit suite passed with the PostgreSQL integration test skipped unless
+  explicitly enabled;
+- live container-backed API flow passed: project create/idempotent retry, task
+  create, task cancel, and activity retrieval;
+- migration `0002_platform_skeleton` downgraded to `0001_foundation` and upgraded
+  again successfully on live PostgreSQL;
+- production Next.js build passed;
+- browser smoke flow passed from empty state through project creation, task
+  creation, cancellation, audit visibility, and mobile overflow validation.
+
+Decisions:
+- bootstrap bearer authentication is strictly local/development-only; selecting
+  the production identity provider remains an explicit product decision;
+- task execution remains disabled, preserving the documented dependency on the
+  later repository-intelligence and sandbox phases;
+- client request IDs are stable across form submissions so create operations
+  retain idempotency under retries.
+
+Known issues:
+- hosted CI has not yet validated this Phase 1 commit;
+- the dashboard readiness request occasionally exceeded the original 2.5-second
+  client timeout, which was raised to 5 seconds while preserving a bounded wait.
+
+Next:
+- pass the complete local quality/security gate and hosted GitHub Actions;
+- then begin Phase 2 GitHub App integration without starting repository code
+  execution or multi-agent behavior.
 
 ## Update Template
 

@@ -89,6 +89,13 @@ jobs:
       AUTODEV_DATABASE_URL: postgresql+psycopg://autodev:autodev@localhost:5432/autodev
       AUTODEV_REDIS_URL: redis://localhost:6379/0
       AUTODEV_TEMPORAL_ADDRESS: localhost:7233
+      AUTODEV_BOOTSTRAP_API_TOKEN: local-development-token-change-before-use-000000000000
+      AUTODEV_BOOTSTRAP_USER_ID: 00000000-0000-4000-8000-000000000001
+      AUTODEV_BOOTSTRAP_USER_EMAIL: developer@example.invalid
+      AUTODEV_BOOTSTRAP_USER_NAME: Local Developer
+      AUTODEV_BOOTSTRAP_ORGANIZATION_ID: 00000000-0000-4000-8000-000000000002
+      AUTODEV_BOOTSTRAP_ORGANIZATION_NAME: Local Workspace
+      AUTODEV_BOOTSTRAP_ORGANIZATION_SLUG: local-workspace
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -98,6 +105,44 @@ jobs:
       - run: alembic upgrade head
       - run: alembic downgrade base
       - run: alembic upgrade head
+
+  api-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_DB: autodev
+          POSTGRES_USER: autodev
+          POSTGRES_PASSWORD: autodev
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U autodev -d autodev"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      AUTODEV_DATABASE_URL: postgresql+psycopg://autodev:autodev@localhost:5432/autodev
+      AUTODEV_REDIS_URL: redis://localhost:6379/0
+      AUTODEV_TEMPORAL_ADDRESS: localhost:7233
+      AUTODEV_BOOTSTRAP_API_TOKEN: local-development-token-change-before-use-000000000000
+      AUTODEV_BOOTSTRAP_USER_ID: 00000000-0000-4000-8000-000000000001
+      AUTODEV_BOOTSTRAP_USER_EMAIL: developer@example.invalid
+      AUTODEV_BOOTSTRAP_USER_NAME: Local Developer
+      AUTODEV_BOOTSTRAP_ORGANIZATION_ID: 00000000-0000-4000-8000-000000000002
+      AUTODEV_BOOTSTRAP_ORGANIZATION_NAME: Local Workspace
+      AUTODEV_BOOTSTRAP_ORGANIZATION_SLUG: local-workspace
+      AUTODEV_RUN_INTEGRATION: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]" alembic==1.16.5
+      - run: alembic upgrade head
+      - run: pytest -m integration
 
   containers:
     runs-on: ubuntu-latest

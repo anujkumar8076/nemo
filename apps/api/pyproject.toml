@@ -34,6 +34,9 @@ packages = ["src/autodev_api"]
 addopts = "-q --strict-markers -p no:cacheprovider"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+markers = [
+  "integration: requires a migrated PostgreSQL database",
+]
 
 [tool.ruff]
 line-length = 100

@@ -43,6 +43,18 @@ packages. The `.venv` directory is ignored.
 Run `pnpm check` for local quality gates and `pnpm security` for dependency
 auditing. CI additionally validates Python, migrations, containers, and secrets.
 
+## Development authentication
+
+Phase 1 uses a server-side bootstrap bearer token to exercise tenant isolation
+before the production identity provider is selected. The API creates exactly
+one configured development user, organization, and owner membership. The token
+is server-only and must never use a `NEXT_PUBLIC_*` name. Bootstrap mode fails
+configuration validation when `AUTODEV_ENVIRONMENT=production`; a production
+deployment therefore cannot accidentally ship with this temporary auth mode.
+
+All values in `.env.example` are intentionally fake local defaults. Replace the
+bootstrap token in any shared development environment.
+
 ## Safety defaults
 
 The platform may analyze repositories, modify isolated workspaces, run checks,
