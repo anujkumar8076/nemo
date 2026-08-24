@@ -312,6 +312,51 @@ Next:
 - implement installation identity, repository synchronization, and the
   short-lived token provider boundary before any branch or pull-request action.
 
+### 2026-08-24 — Phase 2 GitHub App credential boundary
+
+Status:
+PARTIAL
+
+Implemented:
+- server-only RSA GitHub App JWT generation with bounded ten-minute claims;
+- opaque, expiring installation-token responses without fixed-length token
+  assumptions or persistent token storage;
+- repository-scoped permission support for future write operations;
+- paginated installation repository discovery using one ephemeral token;
+- typed, sanitized GitHub provider and rate-limit failures with retry times;
+- an independent remote-action feature gate requiring App ID and private key.
+
+Validated:
+- generated App JWT signature, issuer, and lifetime verified with an ephemeral
+  RSA public key;
+- installation-token request headers, API version, repository scoping, and
+  secret-safe representation tested through a fake GitHub transport;
+- multi-page repository discovery proves a single installation token is used;
+- rate-limit tests prove retry metadata is retained while provider bodies are
+  not exposed;
+- local suite currently passes 12 non-integration tests with two PostgreSQL
+  tests gated for CI.
+- full monorepo lint, strict type checks, tests, Python compilation, and
+  production Next.js build passed;
+- Python dependency audit found no known vulnerabilities;
+- production non-root API image built successfully with the pinned RSA
+  cryptography stack.
+
+Decisions:
+- installation tokens remain in process memory only and are never database
+  records, browser values, or agent inputs;
+- remote repository mutations remain disabled until installation ownership and
+  repository inventory are persisted and verified.
+
+Known issues:
+- hosted CI still requires validation;
+- a real GitHub App identity and public HTTPS webhook endpoint are still needed
+  for contract testing against GitHub.
+
+Next:
+- add tenant-owned installation and repository inventory persistence and sync;
+- validate the credential boundary through dependency audit and hosted CI.
+
 ## Update Template
 
 Copy this section when recording a milestone:

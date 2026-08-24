@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="AUTODEV_",
         env_file=".env",
+        env_ignore_empty=True,
         extra="ignore",
         frozen=True,
     )
@@ -37,6 +38,11 @@ class Settings(BaseSettings):
     github_integration_enabled: bool = False
     github_webhook_secret: SecretStr | None = None
     github_webhook_max_body_bytes: int = Field(default=2_000_000, ge=1024, le=25_000_000)
+    github_remote_actions_enabled: bool = False
+    github_app_id: int | None = Field(default=None, gt=0)
+    github_private_key: SecretStr | None = None
+    github_api_url: str = "https://api.github.com"
+    github_api_version: str = "2026-03-10"
 
     @model_validator(mode="after")
     def reject_bootstrap_auth_in_production(self) -> "Settings":
@@ -51,6 +57,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "enabled GitHub integration requires a webhook secret of at least 32 characters"
             )
+        if self.github_remote_actions_enabled and (
+            not self.github_integration_enabled
+            or self.github_app_id is None
+            or self.github_private_key is None
+        ):
+            raise ValueError("GitHub remote actions require integration, app ID, and private key")
         return self
 
 

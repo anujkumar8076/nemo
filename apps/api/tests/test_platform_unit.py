@@ -57,6 +57,25 @@ def test_bootstrap_auth_is_rejected_in_production() -> None:
         )
 
 
+def test_github_remote_actions_require_app_credentials() -> None:
+    with pytest.raises(ValidationError, match="app ID, and private key"):
+        Settings(
+            database_url="postgresql+psycopg://example.invalid/autodev",
+            redis_url="redis://example.invalid/0",
+            temporal_address="example.invalid:7233",
+            bootstrap_api_token=SecretStr("a" * 32),
+            bootstrap_user_id=uuid4(),
+            bootstrap_user_email="developer@example.invalid",
+            bootstrap_user_name="Developer",
+            bootstrap_organization_id=uuid4(),
+            bootstrap_organization_name="Workspace",
+            bootstrap_organization_slug="workspace",
+            github_integration_enabled=True,
+            github_webhook_secret=SecretStr("b" * 32),
+            github_remote_actions_enabled=True,
+        )
+
+
 def test_cursor_round_trip_and_rejects_invalid_values() -> None:
     created_at = datetime(2026, 8, 24, 12, 30, tzinfo=UTC)
     record_id = UUID("00000000-0000-4000-8000-000000000003")

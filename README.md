@@ -68,6 +68,13 @@ Installation claiming, short-lived installation tokens, repository sync, and
 remote repository writes are not enabled by this ingress slice. They require a
 real GitHub App and verification against a dedicated test repository.
 
+The control plane contains a server-only GitHub App client for RSA-signed App
+JWTs, opaque one-hour installation tokens, paginated repository discovery, and
+rate-limit retry signals. Remote actions remain independently disabled through
+`AUTODEV_GITHUB_REMOTE_ACTIONS_ENABLED`. Enabling them also requires an App ID
+and private key; neither credential is exposed through public API contracts or
+passed to agent execution.
+
 ## Safety defaults
 
 The platform may analyze repositories, modify isolated workspaces, run checks,
