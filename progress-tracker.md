@@ -384,6 +384,9 @@ Validated:
   refusal to synchronize a revoked installation;
 - the local unit suite passes with database tests gated when PostgreSQL is not
   explicitly enabled.
+- hosted CI run `32733678309`: all 11 jobs passed, including inventory
+  integration, full migration rollback/upgrade, dependency audits, secret
+  scanning, and all production container builds.
 
 Decisions:
 - installation inventory is not a project assignment; repositories can be
@@ -397,8 +400,7 @@ Known issues:
 - no authenticated installation-claim state flow or tenant repository-list API
   exists yet;
 - real GitHub contract validation still needs a GitHub App and public HTTPS
-  callback/webhook endpoint;
-- hosted CI has not yet validated this inventory slice.
+  callback/webhook endpoint.
 
 Next:
 - implement a signed, one-time installation state flow bound to the initiating
