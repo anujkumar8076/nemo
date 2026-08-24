@@ -43,7 +43,7 @@ jobs:
         working-directory: apps/${{ matrix.app }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -62,7 +62,7 @@ jobs:
         app: [api, worker]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: pypa/gh-action-pip-audit@v1.1.0
@@ -98,7 +98,7 @@ jobs:
       AUTODEV_BOOTSTRAP_ORGANIZATION_SLUG: local-workspace
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install -e . alembic==1.16.5
@@ -136,7 +136,7 @@ jobs:
       AUTODEV_RUN_INTEGRATION: "1"
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
