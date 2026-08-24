@@ -51,6 +51,12 @@ class GitHubInstallationStatus(StrEnum):
     REVOKED = "revoked"
 
 
+class GitHubInstallationClaimStatus(StrEnum):
+    AWAITING_SETUP = "awaiting_setup"
+    AWAITING_AUTHORIZATION = "awaiting_authorization"
+    COMPLETED = "completed"
+
+
 class TaskMode(StrEnum):
     BUILD = "build"
     GUARDIAN = "guardian"
@@ -143,6 +149,7 @@ class GitHubInstallation(Base):
     organization_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
     )
+
     external_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
     account_external_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     account_login: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -174,6 +181,60 @@ class GitHubInstallation(Base):
             name="ck_github_installations_repository_selection",
         ),
         Index("ix_github_installations_org_status", "organization_id", "status"),
+    )
+
+
+class GitHubInstallationClaim(Base):
+    __tablename__ = "github_installation_claims"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    initiated_by_user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    state_digest: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    status: Mapped[GitHubInstallationClaimStatus] = mapped_column(
+        enum_type(GitHubInstallationClaimStatus, "github_installation_claim_status", 32),
+        default=GitHubInstallationClaimStatus.AWAITING_SETUP,
+        nullable=False,
+    )
+    installation_external_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    verified_github_user_external_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    verified_github_user_login: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "(status = 'awaiting_setup' AND installation_external_id IS NULL "
+            "AND consumed_at IS NULL AND verified_github_user_external_id IS NULL "
+            "AND verified_github_user_login IS NULL) OR "
+            "(status = 'awaiting_authorization' AND installation_external_id IS NOT NULL "
+            "AND consumed_at IS NULL AND verified_github_user_external_id IS NULL "
+            "AND verified_github_user_login IS NULL) OR "
+            "(status = 'completed' AND installation_external_id IS NOT NULL "
+            "AND consumed_at IS NOT NULL AND verified_github_user_external_id IS NOT NULL "
+            "AND verified_github_user_login IS NOT NULL)",
+            name="ck_github_installation_claims_stage_fields",
+        ),
+        Index(
+            "ix_github_installation_claims_org_created",
+            "organization_id",
+            "created_at",
+        ),
+        Index(
+            "ix_github_installation_claims_expiry",
+            "expires_at",
+            "consumed_at",
+        ),
     )
 
 

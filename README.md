@@ -78,6 +78,12 @@ rate-limit retry signals. Remote actions remain independently disabled through
 and private key; neither credential is exposed through public API contracts or
 passed to agent execution.
 
+Installation claiming now has a durable, tenant/user-bound one-time state
+machine, but no public claim action is enabled. Raw state is never stored, setup
+identifiers cannot change after first observation, expired/replayed state is
+rejected, and completion requires a typed proof from the pending GitHub user
+authorization adapter. GitHub user access tokens will remain ephemeral.
+
 ## Safety defaults
 
 The platform may analyze repositories, modify isolated workspaces, run checks,

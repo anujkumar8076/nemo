@@ -461,6 +461,56 @@ Next:
 - connect a human-selected available repository to a project before enabling
   any branch or pull-request write.
 
+### 2026-08-24 — Phase 2 one-time installation claim state
+
+Status:
+PARTIAL
+
+Implemented:
+- durable claim sessions bound to the initiating organization and user;
+- 256-bit random state represented as a masked secret with only a SHA-256
+  digest persisted;
+- ten-minute default expiry with a hard thirty-minute lifetime ceiling;
+- database-constrained stages for awaiting setup, awaiting GitHub user
+  authorization, and completed identity proof;
+- immutable setup installation identifiers, row-locked transitions,
+  idempotent same-ID callbacks, replay rejection, and sanitized conflict
+  handling;
+- verified non-secret GitHub user identity evidence retained with the consumed
+  claim while provider access tokens remain absent from storage.
+
+Validated:
+- Ruff formatting/lint and strict mypy checks passed;
+- unit suite passes with integration tests gated when PostgreSQL is absent;
+- migration `0005_github_install_claims` upgraded from base, downgraded to
+  base, and upgraded again against PostgreSQL 17.6;
+- all six PostgreSQL integration tests passed, including masked/digested state,
+  tenant/user binding, immutable setup ID, expiry, successful verified claim,
+  and replay rejection.
+
+Decisions:
+- setup callbacks may record a candidate installation but can never create
+  tenant ownership;
+- only the future GitHub user authorization adapter may construct verified
+  installation evidence consumed by the claim completion service;
+- state remains a short-lived bearer secret, so callback failures use generic
+  errors that do not reveal whether a digest exists.
+
+Known issues:
+- no configuration, OAuth code exchange, user-installation verification, or
+  public setup/callback endpoint exists yet;
+- hosted CI has not yet validated migration `0005`;
+- a real GitHub App and public HTTPS callback are still required for provider
+  contract validation.
+
+Next:
+- implement a server-only GitHub user authorization adapter that exchanges a
+  one-time code, lists installations accessible to that user, produces typed
+  proof, and discards the token;
+- expose the install/setup/callback flow only after the adapter and redirect
+  allowlist are fully tested;
+- synchronize inventory immediately after a verified claim.
+
 ## Update Template
 
 Copy this section when recording a milestone:
