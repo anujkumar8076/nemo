@@ -290,6 +290,9 @@ Validated:
   successfully on live PostgreSQL;
 - a locally signed `issues` delivery returned `accepted`, and an exact replay
   returned `duplicate`; integration was then restored to disabled-by-default.
+- hosted CI run `32730726057`: all 11 jobs passed, including signed-delivery
+  PostgreSQL integration, migration rollback/upgrade, security scans, and all
+  production container builds.
 
 Decisions:
 - installation setup callbacks will not trust `installation_id` alone; tenant
@@ -301,7 +304,6 @@ Decisions:
   GitHub App are configured.
 
 Known issues:
-- the PostgreSQL webhook integration test still requires hosted validation;
 - no GitHub App installation, repository synchronization, token service, or
   remote write action exists yet.
 
