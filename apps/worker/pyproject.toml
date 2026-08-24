@@ -9,7 +9,7 @@ description = "Autonomous Dev Team durable workflow worker"
 requires-python = ">=3.12,<3.14"
 dependencies = [
   "pydantic-settings==2.10.1",
-  "temporalio==1.16.0",
+  "temporalio==1.31.0",
 ]
 
 [project.optional-dependencies]
