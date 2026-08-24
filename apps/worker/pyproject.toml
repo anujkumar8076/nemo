@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "autodev-worker"
+version = "0.1.0"
+description = "Autonomous Dev Team durable workflow worker"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "pydantic-settings==2.10.1",
+  "temporalio==1.16.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy==1.17.1",
+  "pytest==8.4.1",
+  "pytest-asyncio==1.1.0",
+  "ruff==0.12.11",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/autodev_worker"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers -p no:cacheprovider"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "ASYNC", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["autodev_worker"]

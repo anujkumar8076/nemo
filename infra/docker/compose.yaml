@@ -1,0 +1,125 @@
+name: autonomous-dev-team
+
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [control-plane]
+
+  redis:
+    image: redis:8.2.1-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [control-plane]
+
+  temporal:
+    image: temporalio/auto-setup:1.28.1
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "temporal:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+    networks: [control-plane]
+
+  temporal-ui:
+    image: temporalio/ui:2.40.1
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000
+    depends_on:
+      temporal:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks: [control-plane]
+
+  api:
+    build:
+      context: ../../apps/api
+    environment:
+      AUTODEV_ENVIRONMENT: ${AUTODEV_ENVIRONMENT:-development}
+      AUTODEV_LOG_LEVEL: ${AUTODEV_LOG_LEVEL:-INFO}
+      AUTODEV_DATABASE_URL: ${AUTODEV_DATABASE_URL:?AUTODEV_DATABASE_URL is required}
+      AUTODEV_REDIS_URL: ${AUTODEV_REDIS_URL:?AUTODEV_REDIS_URL is required}
+      AUTODEV_TEMPORAL_ADDRESS: ${AUTODEV_TEMPORAL_ADDRESS:?AUTODEV_TEMPORAL_ADDRESS is required}
+      AUTODEV_TEMPORAL_NAMESPACE: ${AUTODEV_TEMPORAL_NAMESPACE:-default}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    ports:
+      - "${AUTODEV_API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [control-plane]
+
+  worker:
+    build:
+      context: ../../apps/worker
+    environment:
+      AUTODEV_TEMPORAL_ADDRESS: ${AUTODEV_TEMPORAL_ADDRESS:?AUTODEV_TEMPORAL_ADDRESS is required}
+      AUTODEV_TEMPORAL_NAMESPACE: ${AUTODEV_TEMPORAL_NAMESPACE:-default}
+      AUTODEV_TEMPORAL_TASK_QUEUE: autodev-foundation
+    depends_on:
+      temporal:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [control-plane]
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    environment:
+      AUTODEV_API_INTERNAL_URL: ${AUTODEV_API_INTERNAL_URL:?AUTODEV_API_INTERNAL_URL is required}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${AUTODEV_WEB_PORT:-3000}:3000"
+    restart: unless-stopped
+    networks: [control-plane]
+
+networks:
+  control-plane:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,0 +1,25 @@
+{
+  "name": "autonomous-dev-team",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "docker compose --env-file .env -f infra/docker/compose.yaml up --build",
+    "dev:down": "docker compose --env-file .env -f infra/docker/compose.yaml down",
+    "lint:js": "pnpm --filter @autodev/contracts --filter @autodev/web --if-present lint",
+    "lint:python": "pnpm --filter @autodev/api --filter @autodev/worker --if-present lint",
+    "lint": "pnpm lint:js && pnpm lint:python",
+    "typecheck:js": "pnpm --filter @autodev/contracts --filter @autodev/web --if-present typecheck",
+    "typecheck:python": "pnpm --filter @autodev/api --filter @autodev/worker --if-present typecheck",
+    "typecheck": "pnpm typecheck:js && pnpm typecheck:python",
+    "test:js": "pnpm --filter @autodev/contracts --filter @autodev/web --if-present test",
+    "test:python": "pnpm --filter @autodev/api --filter @autodev/worker --if-present test",
+    "test": "pnpm test:js && pnpm test:python",
+    "build:js": "pnpm --filter @autodev/contracts --filter @autodev/web --if-present build",
+    "build:python": "pnpm --filter @autodev/api --filter @autodev/worker --if-present build",
+    "build": "pnpm build:js && pnpm build:python",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "security": "pnpm audit --audit-level high"
+  }
+}

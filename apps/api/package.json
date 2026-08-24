@@ -1,0 +1,12 @@
+{
+  "name": "@autodev/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "ruff check . && ruff format --check .",
+    "typecheck": "mypy src tests",
+    "test": "pytest",
+    "build": "python -m compileall -q src",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  }
+}
