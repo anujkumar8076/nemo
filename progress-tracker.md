@@ -193,7 +193,7 @@ Implemented:
 Validated:
 - `pnpm check`: lint, formatting, strict typing, 8 tests, compile, and
   production web build passed;
-- `pnpm security`: no high or critical JavaScript advisories (one moderate);
+- `pnpm security`: no known JavaScript vulnerabilities;
 - `pip-audit apps/api` and `pip-audit apps/worker`: no known vulnerabilities;
 - `alembic downgrade base` then `alembic upgrade head`: passed on live PostgreSQL;
 - live readiness: PostgreSQL, Redis, and Temporal all reported available;
@@ -204,13 +204,14 @@ Validated:
 Decisions:
 - upgraded FastAPI to 0.141.1 and pinned patched Starlette 1.3.1 after the
   dependency audit detected advisories in Starlette 0.47.3;
+- pinned PostCSS 8.5.23 after the JavaScript audit identified
+  GHSA-fxqj-rqcc-2cmp in the previous transitive version;
 - kept the sandbox manager intentionally deferred until Phase 4;
 - kept human merge as the default and did not introduce multi-agent behavior.
 
 Known issues:
 - hosted CI has not run because the repository has no GitHub remote;
-- the JavaScript audit reports one moderate advisory below the configured
-  high-severity failure threshold.
+- no unresolved local security findings are known at this milestone.
 
 Next:
 - create or select the GitHub repository, push the foundation, and require a
