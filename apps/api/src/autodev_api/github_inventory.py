@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import update
+from sqlalchemy import and_, desc, or_, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import select
@@ -13,6 +13,7 @@ from autodev_api.models import (
     GitHubInstallationRepository,
     GitHubInstallationStatus,
 )
+from autodev_api.services import decode_cursor, encode_cursor
 
 
 class GitHubInstallationUnavailableError(Exception):
@@ -24,6 +25,83 @@ class RepositorySyncResult:
     available: int
     removed: int
     synchronized_at: datetime
+
+
+async def list_installations(
+    session: AsyncSession,
+    *,
+    organization_id: UUID,
+    limit: int,
+    cursor: str | None,
+) -> tuple[list[GitHubInstallation], str | None]:
+    query = select(GitHubInstallation).where(GitHubInstallation.organization_id == organization_id)
+    if cursor is not None:
+        created_at, record_id = decode_cursor(cursor)
+        query = query.where(
+            or_(
+                GitHubInstallation.created_at < created_at,
+                and_(
+                    GitHubInstallation.created_at == created_at,
+                    GitHubInstallation.id < record_id,
+                ),
+            )
+        )
+    records = list(
+        (
+            await session.scalars(
+                query.order_by(
+                    desc(GitHubInstallation.created_at), desc(GitHubInstallation.id)
+                ).limit(limit + 1)
+            )
+        ).all()
+    )
+    has_more = len(records) > limit
+    items = records[:limit]
+    next_cursor = encode_cursor(items[-1].created_at, items[-1].id) if has_more else None
+    return items, next_cursor
+
+
+async def list_repositories(
+    session: AsyncSession,
+    *,
+    organization_id: UUID,
+    installation_id: UUID | None,
+    include_removed: bool,
+    limit: int,
+    cursor: str | None,
+) -> tuple[list[GitHubInstallationRepository], str | None]:
+    query = select(GitHubInstallationRepository).where(
+        GitHubInstallationRepository.organization_id == organization_id
+    )
+    if installation_id is not None:
+        query = query.where(GitHubInstallationRepository.installation_id == installation_id)
+    if not include_removed:
+        query = query.where(GitHubInstallationRepository.available.is_(True))
+    if cursor is not None:
+        created_at, record_id = decode_cursor(cursor)
+        query = query.where(
+            or_(
+                GitHubInstallationRepository.created_at < created_at,
+                and_(
+                    GitHubInstallationRepository.created_at == created_at,
+                    GitHubInstallationRepository.id < record_id,
+                ),
+            )
+        )
+    records = list(
+        (
+            await session.scalars(
+                query.order_by(
+                    desc(GitHubInstallationRepository.created_at),
+                    desc(GitHubInstallationRepository.id),
+                ).limit(limit + 1)
+            )
+        ).all()
+    )
+    has_more = len(records) > limit
+    items = records[:limit]
+    next_cursor = encode_cursor(items[-1].created_at, items[-1].id) if has_more else None
+    return items, next_cursor
 
 
 async def synchronize_installation_repositories(

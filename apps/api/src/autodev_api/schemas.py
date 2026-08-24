@@ -127,6 +127,54 @@ class ActivityPage(BaseModel):
     next_cursor: str | None = None
 
 
+class GitHubInstallationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    external_id: int
+    account_external_id: int
+    account_login: str
+    account_type: Literal["Organization", "User"]
+    repository_selection: Literal["all", "selected"]
+    permissions: dict[str, Any]
+    status: Literal["active", "suspended", "revoked"]
+    suspended_at: datetime | None
+    last_synced_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class GitHubInstallationPage(BaseModel):
+    items: list[GitHubInstallationRead]
+    next_cursor: str | None = None
+
+
+class GitHubRepositoryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    installation_id: UUID
+    external_id: int
+    owner: str
+    name: str
+    full_name: str
+    private: bool
+    default_branch: str
+    html_url: str
+    archived: bool
+    disabled: bool
+    available: bool
+    last_seen_at: datetime
+    removed_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class GitHubRepositoryPage(BaseModel):
+    items: list[GitHubRepositoryRead]
+    next_cursor: str | None = None
+
+
 class GitHubWebhookAccepted(BaseModel):
     status: Literal["accepted", "duplicate", "ignored"]
     delivery_id: str

@@ -8,6 +8,7 @@ from autodev_api.auth import Principal, get_principal
 from autodev_api.config import Settings, get_settings
 from autodev_api.database import get_session
 from autodev_api.errors import ApiError
+from autodev_api.github_inventory import list_installations, list_repositories
 from autodev_api.github_webhooks import (
     SUPPORTED_EVENTS,
     parse_payload,
@@ -17,6 +18,10 @@ from autodev_api.github_webhooks import (
 from autodev_api.schemas import (
     ActivityPage,
     AuditEventRead,
+    GitHubInstallationPage,
+    GitHubInstallationRead,
+    GitHubRepositoryPage,
+    GitHubRepositoryRead,
     GitHubWebhookAccepted,
     ProjectCreate,
     ProjectPage,
@@ -81,6 +86,56 @@ async def github_webhook_endpoint(
     return GitHubWebhookAccepted(
         status="accepted" if created else "duplicate",
         delivery_id=delivery_id,
+    )
+
+
+@router.get(
+    "/github/installations",
+    response_model=GitHubInstallationPage,
+    tags=["github"],
+)
+async def list_github_installations_endpoint(
+    session: SessionDependency,
+    principal: PrincipalDependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    cursor: str | None = None,
+) -> GitHubInstallationPage:
+    installations, next_cursor = await list_installations(
+        session,
+        organization_id=principal.organization_id,
+        limit=limit,
+        cursor=cursor,
+    )
+    return GitHubInstallationPage(
+        items=[GitHubInstallationRead.model_validate(item) for item in installations],
+        next_cursor=next_cursor,
+    )
+
+
+@router.get(
+    "/github/repositories",
+    response_model=GitHubRepositoryPage,
+    tags=["github"],
+)
+async def list_github_repositories_endpoint(
+    session: SessionDependency,
+    principal: PrincipalDependency,
+    installation_id: UUID | None = None,
+    include_removed: bool = False,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    cursor: str | None = None,
+) -> GitHubRepositoryPage:
+    repositories, next_cursor = await list_repositories(
+        session,
+        organization_id=principal.organization_id,
+        installation_id=installation_id,
+        include_removed=include_removed,
+        limit=limit,
+        cursor=cursor,
+    )
+    return GitHubRepositoryPage(
+        items=[GitHubRepositoryRead.model_validate(item) for item in repositories],
+        next_cursor=next_cursor,
     )
 
 

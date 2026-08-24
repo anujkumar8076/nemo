@@ -22,7 +22,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title="Autonomous Dev Team API",
-    version="0.4.0",
+    version="0.5.0",
     docs_url="/docs",
     redoc_url=None,
     lifespan=lifespan,

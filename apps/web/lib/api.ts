@@ -2,11 +2,15 @@ import {
   isActivityPage,
   isApiErrorEnvelope,
   isApiHealth,
+  isGitHubInstallationPage,
+  isGitHubRepositoryPage,
   isProject,
   isProjectPage,
   isTask,
   type ActivityPage,
   type ApiHealth,
+  type GitHubInstallationPage,
+  type GitHubRepositoryPage,
   type Project,
   type ProjectPage,
   type Task,
@@ -85,6 +89,14 @@ export async function loadApiHealth(): Promise<HealthResult> {
 
 export async function loadProjects(): Promise<ProjectPage> {
   return apiRequest("/v1/projects", isProjectPage);
+}
+
+export async function loadGitHubInstallations(): Promise<GitHubInstallationPage> {
+  return apiRequest("/v1/github/installations?limit=100", isGitHubInstallationPage);
+}
+
+export async function loadGitHubRepositories(): Promise<GitHubRepositoryPage> {
+  return apiRequest("/v1/github/repositories?limit=100", isGitHubRepositoryPage);
 }
 
 export async function loadProject(projectId: string): Promise<Project> {

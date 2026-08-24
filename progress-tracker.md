@@ -397,17 +397,68 @@ Decisions:
   continuity while becoming unavailable for future work.
 
 Known issues:
-- no authenticated installation-claim state flow or tenant repository-list API
-  exists yet;
+- no authenticated installation-claim state flow exists yet;
 - real GitHub contract validation still needs a GitHub App and public HTTPS
   callback/webhook endpoint.
 
 Next:
 - implement a signed, one-time installation state flow bound to the initiating
   tenant/user before any installation can be claimed;
-- expose read-only tenant-scoped installation repository inventory and connect
-  a selected repository to a project;
+- connect a selected repository to a project only after verified installation
+  ownership exists;
 - validate removal and revoked-installation behavior with real GitHub fixtures.
+
+### 2026-08-24 — Phase 2 tenant inventory API and settings UI
+
+Status:
+PARTIAL
+
+Implemented:
+- authenticated, keyset-paginated read APIs for GitHub installations and
+  repository inventory, with organization filtering on every query;
+- removed repositories hidden by default with an explicit audit-oriented
+  include flag, while cross-tenant installation filters return no records;
+- runtime-validated TypeScript contracts for installation and repository page
+  responses before provider data reaches UI components;
+- a request-time-rendered settings integration view with live disconnected,
+  available, partial-error, empty, suspended, revoked, and pagination states;
+- API version `0.5.0` for the new read surface.
+
+Validated:
+- full monorepo formatting, lint, strict type checks, unit tests, Python
+  compilation, and production Next.js build passed;
+- API unit suite: 12 passed with four PostgreSQL tests explicitly gated;
+- all four PostgreSQL integration tests passed, covering keyset pagination,
+  removed-record defaults, invalid cursors, and cross-tenant filtering;
+- contract suite: four passed; web component suite: four passed;
+- high-severity JavaScript dependency audit found no known vulnerabilities;
+- production non-root API and web images built successfully;
+- browser validation at desktop and 390px mobile widths showed no console
+  errors or page overflow and confirmed no unsafe installation action appears;
+- runtime validation caught and fixed a build-time static-rendering defect; the
+  production build now identifies `/settings` as dynamic server rendering.
+
+Decisions:
+- inventory reads are available before installation claiming because they do
+  not create ownership, mutate GitHub, or expose credentials;
+- the UI does not render repository URLs as links until provider URL trust and
+  navigation policy are explicitly enforced;
+- installation and repository fetches fail independently so the page can show
+  partial verified state without presenting false success.
+
+Known issues:
+- hosted CI has not yet validated this read/UI slice;
+- no safe installation claim can be exposed until GitHub user identity is
+  verified in addition to one-time tenant state;
+- a real GitHub App and public HTTPS callback/webhook endpoint are still needed
+  for provider contract validation.
+
+Next:
+- validate this slice in hosted CI;
+- implement the GitHub user-identity verification boundary and one-time claim
+  state without persisting provider access tokens;
+- connect a human-selected available repository to a project before enabling
+  any branch or pull-request write.
 
 ## Update Template
 
