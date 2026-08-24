@@ -540,6 +540,9 @@ Validated:
 - high-severity JavaScript dependency audit found no known vulnerabilities;
 - the production non-root API image built successfully and the Compose model
   validated with user authorization disabled by default.
+- hosted CI run `32738460503`: all 11 jobs passed, including strict API checks,
+  PostgreSQL integration, migration validation, dependency and secret scans,
+  and all production container builds.
 
 Decisions:
 - user access tokens exist only inside the adapter call and are represented as
@@ -550,7 +553,6 @@ Decisions:
   unverified setup identifiers still cannot create tenant ownership.
 
 Known issues:
-- hosted CI has not yet validated the authorization adapter;
 - no public begin/setup/OAuth callback flow or redirect allowlist is exposed;
 - a real GitHub App and public HTTPS callback are required for end-to-end
   provider contract validation.
